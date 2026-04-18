@@ -1,497 +1,661 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Ocean Match 3</title>
-  <style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ocean Match 3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        :root {
+            --tile-size: min(60px, 14vw);
+            --gap: 5px;
+            --bg-color: #0a2540;
+        }
 
-    :root {
-      /* This math ensures 6 tiles fit on a phone screen */
-      --tile-size: min(60px, 14vw); 
-      --gap: 5px;
-    }
+        body {
+            text-align: center;
+            background: var(--bg-color);
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            overflow: hidden;
+            user-select: none;
+            touch-action: manipulation;
+        }
 
-    body {
-text-align: center;
-  background: #0a2540;
-  color: white;
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 10px;
-  overscroll-behavior: contain;
-  overflow-x: hidden;
-  
-  /* FIXED: Prevents the board from being highlighted during swipes */
-  user-select: none;
-  -webkit-user-select: none;
-    }
-
-    .game-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-    }
-
-    #board {
-      display: grid;
-      /* Fixed: Ensures exactly 6 columns are rendered */
-      grid-template-columns: repeat(6, var(--tile-size));
-      gap: var(--gap);
-      margin: 20px auto;
-      /* Fixed: Ensures the container width matches the tiles */
-      width: calc(6 * var(--tile-size) + 5 * var(--gap));
-    }
-
-    .tile {
-width: var(--tile-size);
-  height: var(--tile-size);
-  font-size: calc(var(--tile-size) * 0.6); 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1e3a5f;
-  border-radius: 8px;
-  position: relative;
-  touch-action: none;
-  overflow: hidden; 
-  
-  /* FIXED: Changes cursor to a hand and prevents text selection */
-cursor: grab;
-  user-select: none;
-  -webkit-user-select: none;
-  overflow: visible; /* Changed to visible so sparks can fly outside the tile box */
-    }
-.tile:active {
-  cursor: grabbing;
+        h1 {
+            margin: 10px 0;
+            font-size: 1.8rem;
+            color: #38bdf8;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+#gameOverOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 37, 64, 0.85); /* Dark blue semi-transparent */
+    backdrop-filter: blur(8px); /* Blurs the game board behind */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
 }
 
-    .icon-content {
-      display: block;
-      position: relative;
-      z-index: 5;
-      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s;
-      will-change: transform;
-      font-variant-emoji: emoji;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .pop {
-      transform: scale(1.4);
-      opacity: 0;
-    }
-
-    .bounce {
-      animation: iconBounce 0.3s;
-    }
-
-    @keyframes iconBounce {
-      0% { transform: translateY(-10px); }
-      50% { transform: translateY(5px); }
-      100% { transform: translateY(0); }
-    }
-
-    .stats-container {
-      width: calc(6 * var(--tile-size) + 5 * var(--gap));
-      margin: 0 auto;
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 50px;
-    }
-
-    #scoreText {
-      font-size: clamp(18px, 5vw, 24px);
-    }
-
-    #comboText {
-      position: absolute;
-      left: calc(50% + 70px); 
-      text-align: left;
-      font-size: 11px;
-      color: #ffcc00;
-      line-height: 1.1;
-      text-transform: uppercase;
-      pointer-events: none;
-    }
-/* The container for the sparks */
-.spark {
-
-  position: absolute;
-  width: 8px; 
-  height: 8px;
-  background: var(--spark-color, #ffcc00);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 10;
-  /* FIXED: Glow now uses the dynamic spark color */
-  box-shadow: 0 0 10px var(--spark-color, #ffcc00);
-  animation: spark-fade 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  will-change: transform, opacity;
-
+.game-over-content {
+    background: #1a3a5a;
+    padding: 40px;
+    border-radius: 20px;
+    border: 3px solid #38bdf8;
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+    text-align: center;
 }
 
-@keyframes spark-fade {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 1;
-  }
-  100% {
-    /* Flies out to the random coordinates set by JS */
-    transform: translate(var(--dx), var(--dy)) scale(0.3);
-    opacity: 0;
-  }
+.game-over-content h2 {
+    color: #38bdf8;
+    font-size: 2.5rem;
+    margin: 0 0 10px 0;
 }
-  </style>
+
+#finalScoreDisplay {
+    font-size: 1.5rem;
+    margin-bottom: 30px;
+    font-weight: bold;
+}
+
+.game-over-content button {
+    background: #38bdf8;
+    color: #0a2540;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.game-over-content button:hover {
+    transform: scale(1.1);
+}
+.stats-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: center;
+    width: calc(6 * var(--tile-size) + 5 * var(--gap));
+    margin: 0 auto 15px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    height: 50px; /* Increased from 40px */
+}
+/* Time stays far left */
+#timerText {
+    text-align: left;
+}
+
+/* Score stays exactly in the middle */
+#scoreText {
+    text-align: center;
+    white-space: nowrap;
+    font-size: 1.6rem; /* Increased size */
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.3); /* Optional: subtle glow to match title */
+}
+
+/* Combo container sits to the right of center */
+#comboContainer {
+    text-align: left;
+    padding-left: 10px;
+    min-height: 1.2em; /* Prevents layout jump when empty */
+}
+
+#comboText {
+    color: #facc15;
+    font-weight: 900;
+}
+        #board {
+            display: grid;
+            grid-template-columns: repeat(6, var(--tile-size));
+            grid-template-rows: repeat(6, var(--tile-size));
+            gap: var(--gap);
+            margin: 0 auto;
+            width: fit-content;
+            background: rgba(255, 255, 255, 0.05);
+            padding: var(--gap);
+            border-radius: 12px;
+            position: relative;
+			overflow: visible;
+        }
+
+        .tile {
+            width: var(--tile-size);
+            height: var(--tile-size);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+.icon-content {
+    font-size: calc(var(--tile-size) * 0.65);
+    display: block;
+    pointer-events: none;
+    z-index: 2;
+    will-change: transform, opacity; /* Add this line */
+}
+        .spark {
+    position: absolute;
+    width: 5px; /* JS will override this size */
+    height: 5px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 100; /* Ensure sparks are above ghosts */
+}
+
+        #comboText { color: #facc15; min-width: 60px; font-weight: 900; }
+    </style>
 </head>
 <body>
 
-<div class="game-container">
-  <h1>⚓ Ocean Match 3 🌊</h1>
-  <p>Click or Swipe to swap</p>
+    <h1>Ocean Match 3</h1>
 
-  <div class="stats-container">
-    <span id="scoreText">Score: 0</span>
-    <span id="comboText"></span>
-  </div>
-
-  <div id="board"></div>
+<div class="stats-container">
+    <div id="timerText">Time: 30</div>
+    <div id="scoreText">Score: 0</div>
+    <div id="comboContainer">
+        <span id="comboText"></span>
+    </div>
 </div>
 
+    <div id="board"></div>
+
 <script>
-const icons = ["\u{2693}", "\u{1F41A}", "\u{1F420}", "\u{1FAB8}", "\u{1F48E}"];
-const iconColors = {
-  "\u{2693}": "#cbd5e1", // Anchor (Silver)
-  "\u{1F41A}": "#f8fafc", // Shell (White)
-  "\u{1F420}": "#fb923c", // Fish (Orange)
-  "\u{1FAB8}": "#f87171", // Coral (Red)
-  "\u{1F48E}": "#38bdf8"  // Gem (Bright Blue)
-};
-const width = 6;
-let board = [];
-let firstTile = null;
-let isProcessing = false;
-let score = 0;
-let startX, startY;
+    // Exact original icons and weights
+const icons = ["🦀", "🐠", "☸️", "⚓", "🐚", "🐬"];
+const weights = [40, 25, 15, 10, 10]; 
 
-function createBoard() {
-  const boardDiv = document.getElementById("board");
-  boardDiv.innerHTML = "";
-  board = [];
-
-  for (let i = 0; i < width * width; i++) {
-    let tile = document.createElement("div");
-    tile.classList.add("tile");
-    let value = getWeightedRandomIcon();
-    setTile(tile, value);
-
-    tile.addEventListener("mousedown", (e) => handleInputStart(e, i));
-    tile.addEventListener("mouseup", (e) => handleInputEnd(e, i));
-    tile.addEventListener("dragstart", (e) => e.preventDefault());
-    tile.addEventListener("touchstart", (e) => handleInputStart(e.touches[0], i), {passive: true});
-    tile.addEventListener("touchend", (e) => handleInputEnd(e.changedTouches[0], i), {passive: true});
-
-    board.push(tile);
-    boardDiv.appendChild(tile);
-  }
-}
-
-function handleInputStart(e, index) {
-  if (isProcessing) return;
-  startX = e.clientX;
-  startY = e.clientY;
-  firstTile = { tile: board[index], index: index };
-}
-
-function handleInputEnd(e, index) {
-  if (isProcessing || !firstTile) return;
-
-  let endX = e.clientX;
-  let endY = e.clientY;
-  let diffX = endX - startX;
-  let diffY = endY - startY;
-
-  if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
-    if (firstTile.index === index) {
-       selectTile(firstTile.tile, index);
-    }
-  } else {
-    firstTile.tile.style.background = "#1e3a5f";
-    let originIndex = firstTile.index;
-    firstTile = null;
-    handleSwipe(originIndex, diffX, diffY);
-  }
-}
-
-function handleSwipe(index, diffX, diffY) {
-  let targetIndex = -1;
-  if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 30) {
-    if (diffX > 0 && (index % width) < width - 1) targetIndex = index + 1;
-    else if (diffX < 0 && (index % width) > 0) targetIndex = index - 1;
-  } 
-  else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 30) {
-    if (diffY > 0 && index < width * (width - 1)) targetIndex = index + width;
-    else if (diffY < 0 && index >= width) targetIndex = index - width;
-  }
-
-  if (targetIndex !== -1) executeMove(index, targetIndex);
-}
-
-async function executeMove(i1, i2) {
-  isProcessing = true;
-  swapTiles(i1, i2);
-  await sleep(300);
-  
-  let matches = getMatches();
-  if (matches.length > 0) {
-    processBoard(); 
-  } else {
-    swapTiles(i1, i2);
-    isProcessing = false;
-  }
-}
-
-function setTile(tile, value) {
-  tile.dataset.value = value;
-  tile.innerHTML = value == -1 ? "" : `<span class="icon-content">${icons[value]}</span>`;
-}
-
-function selectTile(tile, index) {
-  if (isProcessing) return;
-
-  if (firstTile && firstTile.index === index && firstTile.tile.style.background !== "rgb(30, 58, 95)") {
-    firstTile.tile.style.background = "#1e3a5f";
-    firstTile = null;
-    return;
-  }
-
-  if (!firstTile || firstTile.tile.style.background === "rgb(30, 58, 95)") {
-    firstTile = { tile, index };
-    tile.style.background = "#3a6ea5";
-  } else {
-    const row1 = Math.floor(firstTile.index / width);
-    const col1 = firstTile.index % width;
-    const row2 = Math.floor(index / width);
-    const col2 = index % width;
+// NEW: Use an array so index 0 (Crab) gets Color 0 (Red)
+const iconColors = [
+    "#d64545", // 0: 🦀 Crab (Muted Crimson)
+    "#e9c46a", // 1: 🐠 Fish (Sandy Yellow)
+    "#9b87af", // 2: ☸️ Wheel (Dusty Purple)
+    "#52606d", // 3: ⚓ Anchor (Slate Grey)
+    "#f1dca7", // 4: 🐚 Shell (Warm Cream)
+    "#64b5f6"  // 5: 🐬 Dolphin (Soft Sky Blue)
+];
     
-    if (Math.abs(row1 - row2) + Math.abs(col1 - col2) === 1) {
-      swapTiles(firstTile.index, index);
-      firstTile.tile.style.background = "#1e3a5f";
-      let matches = getMatches();
-      if (matches.length > 0) {
-        firstTile = null;
-        processBoard();
-      } else {
-        isProcessing = true;
-        let savedIndex = firstTile.index;
-        firstTile = null;
-        setTimeout(() => {
-          swapTiles(savedIndex, index);
-          isProcessing = false;
-        }, 400);
-      }
-    } else {
-      firstTile.tile.style.background = "#1e3a5f";
-      firstTile = { tile, index };
-      tile.style.background = "#3a6ea5";
-    }
-  }
-}
+    const gridWidth = 6;
+    let boardData = []; 
+    let boardElements = []; 
+    let score = 0;
+    let timeLeft = 30;
+    let isProcessing = true; 
+    let selectedIdx = null;
+    let timerId = null;
+	let startX, startY;
+	let comboTimeout;
 
-function swapTiles(i1, i2) {
-  let temp = board[i1].dataset.value;
-  setTile(board[i1], board[i2].dataset.value);
-  setTile(board[i2], temp);
-}
-
-function getMatches() {
-  let matches = new Set();
-  for (let i = 0; i < board.length; i++) {
-    let val = board[i].dataset.value;
-    if (val == -1) continue;
-    if (i % width < width - 2) {
-      if (board[i+1].dataset.value == val && board[i+2].dataset.value == val) {
-        matches.add(i); matches.add(i+1); matches.add(i+2);
-      }
-    }
-    if (i < width * (width - 2)) {
-      if (board[i+width].dataset.value == val && board[i+2*width].dataset.value == val) {
-        matches.add(i); matches.add(i+width); matches.add(i+2*width);
-      }
-    }
-  }
-  return [...matches];
-}
-
-function clearMatches(matchIndexes) {
-  // Increase intensity based on match length (3 = 1x, 4 = 1.5x, 5+ = 2x)
-  const intensity = Math.min(2, 1 + (matchIndexes.length - 3) * 0.5);
-
-  matchIndexes.forEach(i => {
-    let tile = board[i];
-    let iconSpan = tile.querySelector('.icon-content');
-    
-    if (iconSpan) {
-      // 1. Get the numerical value (0-4) stored on the tile
-      const val = parseInt(tile.dataset.value);
-      // 2. Get the corresponding emoji from your icons array
-      const emoji = icons[val];
-      // 3. Get the color from your map, fallback to gold
-      const explosionColor = iconColors[emoji] || "#ffcc00";
-
-      iconSpan.classList.add("pop");
-      createSparks(tile, intensity, explosionColor);
-    }
-
-    setTimeout(() => {
-      board[i].dataset.value = -1;
-      board[i].innerHTML = "";
-    }, 200);
-  });
-}
-
-function createSparks(tile, intensity, color) {
-  const rect = tile.getBoundingClientRect();
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
-  
-  // Clamped between 5 and 7 circles to prevent clutter
-  const particleCount = Math.floor(Math.random() * 3) + 5; 
-
-  for (let i = 0; i < particleCount; i++) {
-    const spark = document.createElement("div");
-    spark.classList.add("spark");
-    
-    // Set the specific icon color passed from clearMatches
-    spark.style.setProperty('--spark-color', color);
-    
-    // Calculate spread: random directions with varied distances
-    const angle = Math.random() * Math.PI * 2;
-    // Intensity (match size) slightly increases the distance they fly
-    const distance = (Math.random() * 40 + 40) * intensity;
-    const dx = Math.cos(angle) * distance + "px";
-    const dy = Math.sin(angle) * distance + "px";
-
-    spark.style.setProperty('--dx', dx);
-    spark.style.setProperty('--dy', dy);
-    
-    // Position at the center of the tile
-    spark.style.left = (centerX - 4) + "px"; // Offset by half-width (4px) to center perfectly
-    spark.style.top = (centerY - 4) + "px";
-    
-    tile.appendChild(spark);
-
-    // Clean up the element after the animation finishes
-    setTimeout(() => spark.remove(), 800);
-  }
-}
-
-async function dropTiles() {
-  let maxDrops = 0;
-  let animations = [];
-  const tileSize = board[0].getBoundingClientRect().width + 5; 
-
-  for (let col = 0; col < width; col++) {
-    let emptySpaces = 0;
-    for (let row = width - 1; row >= 0; row--) {
-      let i = row * width + col;
-      if (board[i].dataset.value == -1) {
-        emptySpaces++;
-      } else if (emptySpaces > 0) {
-        let targetIndex = (row + emptySpaces) * width + col;
-        let val = board[i].dataset.value;
-        let iconElement = board[i].querySelector('.icon-content');
-
-        if (iconElement) {
-          maxDrops = Math.max(maxDrops, emptySpaces);
-          iconElement.style.transform = `translateY(${emptySpaces * tileSize}px)`;
-
-          let anim = new Promise(resolve => {
-            setTimeout(() => {
-              setTile(board[targetIndex], val);
-              const newIcon = board[targetIndex].querySelector('.icon-content');
-              if (newIcon) {
-                newIcon.classList.add("bounce");
-                setTimeout(() => newIcon.classList.remove("bounce"), 300);
-              }
-              board[i].dataset.value = -1;
-              board[i].innerHTML = "";
-              resolve();
-            }, 400); 
-          });
-          animations.push(anim);
+    function init() {
+        const boardDiv = document.getElementById("board");
+        boardDiv.innerHTML = "";
+        
+        for (let i = 0; i < gridWidth * gridWidth; i++) {
+            const tileDiv = document.createElement("div");
+            tileDiv.classList.add("tile");
+            tileDiv.dataset.index = i;
+            
+            const iconSpan = document.createElement("span");
+            iconSpan.classList.add("icon-content");
+            tileDiv.appendChild(iconSpan);
+            
+            tileDiv.addEventListener("mousedown", (e) => handleDragStart(e, i));
+tileDiv.addEventListener("touchstart", (e) => handleDragStart(e, i), {passive: false});
+tileDiv.addEventListener("mouseup", (e) => handleDragEnd(e, i));
+tileDiv.addEventListener("touchend", (e) => handleDragEnd(e, i));
+            boardDiv.appendChild(tileDiv);
+            
+            boardElements.push(tileDiv);
+            boardData.push(-1); 
         }
-      }
+
+        fillInitialBoard();
+        startTimer();
+        isProcessing = false;
     }
-  }
-  if (animations.length > 0) await Promise.all(animations);
+function handleDragStart(e, idx) {
+    if (isProcessing || timeLeft <= 0) return;
+    // Record starting position (works for both mouse and touch)
+    startX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+    startY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+    selectedIdx = idx;
+    boardElements[idx].style.background = "rgba(255, 255, 255, 0.3)";
 }
 
-function refillBoard() {
-  for (let i = 0; i < board.length; i++) {
-    if (board[i].dataset.value == -1) {
-      let newVal = getWeightedRandomIcon();
-      setTile(board[i], newVal);
-      const icon = board[i].querySelector('.icon-content');
-      if (icon) {
-        icon.style.opacity = "0";
-        icon.style.transform = "scale(0.5)";
-        setTimeout(() => {
-          icon.style.opacity = "1";
-          icon.style.transform = "scale(1)";
-        }, 50);
-      }
+async function handleDragEnd(e, idx) {
+    if (isProcessing || selectedIdx === null) return;
+    
+    const endX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0);
+    const endY = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : 0);
+    
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const threshold = 30; 
+
+    boardElements[selectedIdx].style.background = "";
+
+    if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
+        let targetIdx = -1;
+        const r = Math.floor(selectedIdx / gridWidth); // Use selectedIdx (the start)
+        const c = selectedIdx % gridWidth;
+
+        // Logic fix: We calculate direction based on swipe, 
+        // but targetIdx is ALWAYS restricted to +1 or -1 from the start.
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // Horizontal swipe
+            if (dx > 0 && c < gridWidth - 1) targetIdx = selectedIdx + 1;
+            else if (dx < 0 && c > 0) targetIdx = selectedIdx - 1;
+        } else {
+            // Vertical swipe
+            if (dy > 0 && r < gridWidth - 1) targetIdx = selectedIdx + gridWidth;
+            else if (dy < 0 && r > 0) targetIdx = selectedIdx - gridWidth;
+        }
+
+        if (targetIdx !== -1) {
+            const i1 = selectedIdx;
+            selectedIdx = null; 
+            await swap(i1, targetIdx);
+        }
     }
-  }
+    
+    selectedIdx = null;
+}
+    function getWeightedIcon() {
+        let r = Math.floor(Math.random() * 100);
+        // Using indices 0-4 based on the weight table, fallback to 5 (Dolphin) if logic rolls high
+        for (let i = 0; i < weights.length; i++) {
+            if (r < weights[i]) return i;
+            r -= weights[i];
+        }
+        return 5; 
+    }
+
+    function fillInitialBoard() {
+        for (let i = 0; i < boardData.length; i++) {
+            let val;
+            do {
+                val = getWeightedIcon();
+            } while (isCreatingMatch(i, val));
+            boardData[i] = val;
+            renderTile(i);
+        }
+    }
+
+    function isCreatingMatch(idx, val) {
+        const r = Math.floor(idx / gridWidth);
+        const c = idx % gridWidth;
+        if (c >= 2 && boardData[idx - 1] === val && boardData[idx - 2] === val) return true;
+        if (r >= 2 && boardData[idx - gridWidth] === val && boardData[idx - (gridWidth * 2)] === val) return true;
+        return false;
+    }
+
+    function renderTile(idx) {
+        const span = boardElements[idx].querySelector('.icon-content');
+        const val = boardData[idx];
+        if (val === -1) {
+            span.style.opacity = "0";
+        } else {
+            span.innerText = icons[val];
+            span.style.opacity = "1";
+            span.style.transform = "scale(1)";
+        }
+    }
+
+    async function handleInteraction(idx) {
+        if (isProcessing || timeLeft <= 0) return;
+
+        if (selectedIdx === null) {
+            selectedIdx = idx;
+            boardElements[idx].style.background = "rgba(255, 255, 255, 0.3)";
+        } else {
+            const i1 = selectedIdx;
+            const i2 = idx;
+            boardElements[i1].style.background = "";
+            selectedIdx = null;
+
+            if (checkAdjacency(i1, i2)) {
+                await swap(i1, i2);
+            }
+        }
+    }
+
+    function checkAdjacency(i1, i2) {
+        const r1 = Math.floor(i1 / gridWidth), c1 = i1 % gridWidth;
+        const r2 = Math.floor(i2 / gridWidth), c2 = i2 % gridWidth;
+        return (Math.abs(r1 - r2) + Math.abs(c1 - c2)) === 1;
+    }
+
+    async function swap(i1, i2, recursiveCheck = true) {
+        isProcessing = true;
+        const span1 = boardElements[i1].querySelector('.icon-content');
+        const span2 = boardElements[i2].querySelector('.icon-content');
+        
+        const rect1 = boardElements[i1].getBoundingClientRect();
+        const rect2 = boardElements[i2].getBoundingClientRect();
+
+        // Anime.js Swap Animation
+        await Promise.all([
+            anime({
+                targets: span1,
+                translateX: rect2.left - rect1.left,
+                translateY: rect2.top - rect1.top,
+                duration: 250,
+                easing: 'easeOutQuart'
+            }).finished,
+            anime({
+                targets: span2,
+                translateX: rect1.left - rect2.left,
+                translateY: rect1.top - rect2.top,
+                duration: 250,
+                easing: 'easeOutQuart'
+            }).finished
+        ]);
+
+        let temp = boardData[i1];
+        boardData[i1] = boardData[i2];
+        boardData[i2] = temp;
+
+        // Reset positions after swap to sync with data
+        span1.style.transform = "none";
+        span2.style.transform = "none";
+        renderTile(i1);
+        renderTile(i2);
+
+        if (recursiveCheck) {
+            const matches = findMatches();
+            if (matches.length > 0) {
+                await resolveMatches();
+            } else {
+                await swap(i1, i2, false); // Swap back if no match
+            }
+        }
+        isProcessing = false;
+    }
+
+async function resolveMatches() {
+    let combo = 0;
+    while (true) {
+        const matches = findMatches();
+        if (matches.length === 0) break;
+
+        combo++;
+        score += matches.length * 10 * combo;
+        timeLeft = Math.min(60, timeLeft + 2);
+        updateStats(combo);
+
+        await animateClear(matches);
+
+        // RUN BOTH AT THE SAME TIME
+        // We await the completion of both simultaneously
+        await Promise.all([
+            animateFall(),
+            animateRefill()
+        ]);
+    }
 }
 
-function getWeightedRandomIcon() {
-  const weights = [40, 25, 15, 10, 10]; 
-  const totalWeight = weights.reduce((a, b) => a + b, 0);
-  let random = Math.floor(Math.random() * totalWeight);
-  for (let i = 0; i < weights.length; i++) {
-    if (random < weights[i]) return i;
-    random -= weights[i];
-  }
-  return 0;
+async function animateClear(matches) {
+    const animations = matches.map(idx => {
+        const span = boardElements[idx].querySelector('.icon-content');
+        
+        // 1. Get the raw numeric value of the tile (0 through 5)
+        const val = boardData[idx];
+        
+        // 2. Grab the color directly from the array using that number
+        // This completely bypasses any emoji text-matching errors!
+        const matchColor = iconColors[val] || "#ffffff";
+        
+        // 3. Trigger sparks
+        spawnSparks(boardElements[idx], matchColor);
+        
+        // 4. Clear data
+        boardData[idx] = -1;
+
+        return anime({
+            targets: span,
+            scale: 0,
+            opacity: 0,
+            duration: 400,
+            easing: 'easeInBack'
+        }).finished;
+    });
+
+    await Promise.all(animations);
+    matches.forEach(idx => renderTile(idx));
 }
 
-async function processBoard() {
-  isProcessing = true;
-  let combo = 0;
+async function animateFall() {
+    const animations = [];
+    const gapSize = boardElements[0].offsetWidth + 5;
 
-  while (true) {
-    let matches = getMatches();
-    if (matches.length === 0) break;
+    for (let col = 0; col < gridWidth; col++) {
+        let emptyCount = 0;
+        for (let row = gridWidth - 1; row >= 0; row--) {
+            const i = row * gridWidth + col;
+            
+            if (boardData[i] === -1) {
+                emptyCount++;
+            } else if (emptyCount > 0) {
+                const targetIdx = (row + emptyCount) * gridWidth + col;
+                const val = boardData[i];
+                const movingSpan = boardElements[i].querySelector('.icon-content');
+                
+                const ghost = document.createElement("span");
+                ghost.innerText = icons[val];
+                ghost.style.cssText = `position: absolute; font-size: calc(var(--tile-size) * 0.65); z-index: 20; pointer-events: none;`;
+                boardElements[i].appendChild(ghost);
 
-    combo++;
-    let basePoints = matches.length * 10;
-    let bonus = matches.length === 4 ? 50 : (matches.length >= 5 ? 150 : 0);
-    let points = (basePoints + bonus) * combo;
-    score += points;
+                movingSpan.style.opacity = "0";
+                boardData[targetIdx] = val;
+                boardData[i] = -1;
 
+                animations.push(anime({
+                    targets: ghost,
+                    translateY: emptyCount * gapSize,
+                    duration: 500, // Slightly faster for a snappier feel
+                    easing: 'easeOutElastic(0.5, 1)', // Changed from 0.2 to 0.5 to reduce bounce
+                    delay: row * 20
+                }).finished.then(() => {
+                    ghost.remove();
+                    renderTile(targetIdx);
+                    renderTile(i);
+                }));
+            }
+        }
+    }
+    await Promise.all(animations);
+}
+
+async function animateRefill() {
+    const animations = [];
+    const gapSize = boardElements[0].offsetWidth + 5;
+
+    for (let col = 0; col < gridWidth; col++) {
+        let emptyInCol = 0;
+        for (let row = 0; row < gridWidth; row++) {
+            if (boardData[row * gridWidth + col] === -1) emptyInCol++;
+        }
+
+        for (let row = 0; row < gridWidth; row++) {
+            const i = row * gridWidth + col;
+            if (boardData[i] === -1) {
+                const val = getWeightedIcon();
+                boardData[i] = val;
+                
+                const targetSpan = boardElements[i].querySelector('.icon-content');
+                targetSpan.style.opacity = "0"; 
+
+                const ghost = document.createElement("span");
+                ghost.innerText = icons[val];
+                ghost.style.cssText = `position: absolute; font-size: calc(var(--tile-size) * 0.65); z-index: 15; pointer-events: none;`;
+                boardElements[i].appendChild(ghost);
+
+                animations.push(anime({
+                    targets: ghost,
+                    translateY: [-(row + emptyInCol + 2) * gapSize, 0],
+                    opacity: [0, 1],
+                    duration: 500, // Slightly faster
+                    delay: row * 30,
+                    easing: 'easeOutElastic(0.5, 1)' // Changed from 0.2 to 0.5 to reduce bounce
+                }).finished.then(() => {
+                    ghost.remove();
+                    renderTile(i);
+                }));
+            }
+        }
+    }
+    await Promise.all(animations);
+}
+
+    function findMatches() {
+        const matchSet = new Set();
+        for (let r = 0; r < gridWidth; r++) {
+            for (let c = 0; c < gridWidth - 2; c++) {
+                const i = r * gridWidth + c;
+                if (boardData[i] !== -1 && boardData[i] === boardData[i+1] && boardData[i] === boardData[i+2]) {
+                    matchSet.add(i); matchSet.add(i+1); matchSet.add(i+2);
+                }
+            }
+        }
+        for (let c = 0; c < gridWidth; c++) {
+            for (let r = 0; r < gridWidth - 2; r++) {
+                const i = r * gridWidth + c;
+                if (boardData[i] !== -1 && boardData[i] === boardData[i+gridWidth] && boardData[i] === boardData[i+(gridWidth*2)]) {
+                    matchSet.add(i); matchSet.add(i+gridWidth); matchSet.add(i+(gridWidth*2));
+                }
+            }
+        }
+        return Array.from(matchSet);
+    }
+
+function spawnSparks(container, color) {
+    for (let i = 0; i < 12; i++) { 
+        const s = document.createElement("div");
+        s.classList.add("spark");
+        
+        // Keeping your original larger size
+        const size = 6 + Math.random() * 6;
+        s.style.width = `${size}px`;
+        s.style.height = `${size}px`;
+        
+        // Remove the glow (box-shadow) and use a slightly softer opacity
+        s.style.backgroundColor = color; 
+        s.style.opacity = "0.8"; 
+        s.style.boxShadow = "none"; // This stops the "too bright" effect
+        
+        s.style.left = "50%"; 
+        s.style.top = "50%";
+        container.appendChild(s);
+        
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 60 + Math.random() * 60; 
+        
+        anime({
+            targets: s,
+            translateX: Math.cos(angle) * dist,
+            translateY: Math.sin(angle) * dist,
+            opacity: [0.8, 0],
+            scale: [1.5, 0], 
+            duration: 1000,
+            easing: 'easeOutExpo',
+            complete: () => s.remove()
+        });
+    }
+}
+
+function updateStats(combo) {
     document.getElementById("scoreText").innerText = "Score: " + score;
-    let comboDisplay = document.getElementById("comboText");
-    let comboLine = combo > 1 ? `Combo x${combo} 🔥` : "";
-    let bonusLine = bonus > 0 ? "BIG MATCH! 🌟" : "";
-    comboDisplay.innerHTML = `${comboLine}${comboLine && bonusLine ? '<br>' : ''}${bonusLine}<br>(+${points})`;
+    document.getElementById("timerText").innerText = "Time: " + Math.ceil(timeLeft);
+    
+    const comboEl = document.getElementById("comboText");
+    
+    if (combo > 1) {
+        // Clear any existing timer so it doesn't disappear too early if you're on a roll
+        clearTimeout(comboTimeout);
+        
+        comboEl.innerText = `x${combo} 🔥`;
+        
+        // Visual pop for the combo
+        anime({ 
+            targets: comboEl, 
+            scale: [1.3, 1], 
+            duration: 300,
+            easing: 'easeOutBack'
+        });
 
-    clearMatches(matches);
-    await sleep(400);
-    await dropTiles();
-    refillBoard();
-    await sleep(400);
-  }
-  document.getElementById("comboText").innerText = "";
-  isProcessing = false;
+        // Make it disappear after 1.5 seconds of no matches
+        comboTimeout = setTimeout(() => {
+            anime({
+                targets: comboEl,
+                opacity: 0,
+                duration: 500,
+                complete: () => {
+                    comboEl.innerText = "";
+                    comboEl.style.opacity = 1; // Reset opacity for next time
+                }
+            });
+        }, 1500);
+    }
 }
 
-function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+function startTimer() {
+    if (timerId) clearInterval(timerId);
+    timerId = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timerText").innerText = "Time: " + Math.max(0, timeLeft);
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerId);
+            showGameOver();
+        }
+    }, 1000);
+}
+function showGameOver() {
+    isProcessing = true; // Stop all interaction
+    const overlay = document.getElementById("gameOverOverlay");
+    document.getElementById("finalScoreDisplay").innerText = "Final Score: " + score;
+    
+    overlay.style.display = "flex";
+    overlay.style.opacity = 0;
 
-createBoard();
-setTimeout(processBoard, 500);
+    anime({
+        targets: overlay,
+        opacity: 1,
+        duration: 800,
+        easing: 'easeOutQuad'
+    });
+
+    // Optional: Animate the content box popping in
+    anime({
+        targets: '.game-over-content',
+        scale: [0.5, 1],
+        duration: 1000,
+        easing: 'easeOutElastic(1, .8)'
+    });
+}
+
+    init();
 </script>
+<div id="gameOverOverlay" style="display: none;">
+    <div class="game-over-content">
+        <h2>TIME'S UP!</h2>
+        <div id="finalScoreDisplay">Score: 0</div>
+        <button onclick="location.reload()">PLAY AGAIN</button>
+    </div>
+</div>
 </body>
 </html>
