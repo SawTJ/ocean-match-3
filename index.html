@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ocean Match 3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    <style>
+<style>
 :root {
-    /* Back to stable 60px */
-    --tile-size: min(60px, 14vw); 
+    /* Stable board size */
+    --tile-size: min(60px, 14vw);
     --gap: 5px;
     --bg-color: #0a2540;
 }
@@ -23,6 +23,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    /* Prevent selection and browser highlights */
     -webkit-tap-highlight-color: transparent; 
 }
 
@@ -38,7 +39,7 @@ body {
 }
 
 .icon-content {
-    /* Kept at 0.72 for stable icon-to-tile proportions */
+    /* Stable proportional size */
     font-size: calc(var(--tile-size) * 0.72); 
     display: flex;
     justify-content: center;
@@ -53,33 +54,34 @@ body {
     display: grid; grid-template-columns: repeat(6, var(--tile-size));
     grid-template-rows: repeat(6, var(--tile-size)); gap: var(--gap);
     background: rgba(255, 255, 255, 0.05);
-    padding: var(--gap); border-radius: 12px; position: relative;
+    padding: var(--gap); border-radius: 12px; position: relative; overflow: visible;
+    
+    /* PREVENTS MOBILE SCREEN FROM SCROLLING WHEN SWIPING */
+    touch-action: none; 
 }
 
 .tile {
-    width: var(--tile-size); 
-    height: var(--tile-size);
+    width: var(--tile-size); height: var(--tile-size);
     background: rgba(255, 255, 255, 0.1); 
     border-radius: 8px;
-    display: flex; 
-    justify-content: center; 
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
     position: relative;
-    /* This removes the blue highlight/selection when dragging */
+    /* Strict removal of dragging/interaction highlights */
     outline: none;
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
+
 .spark { 
     position: absolute; 
     border-radius: 50%; 
     pointer-events: none; 
     z-index: 100;
-    /* Slightly stronger glow to match the 50% size increase */
     box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
 }
 
+/* PC VERSION: Leaderboard on the right */
 #leaderboardArea {
     position: absolute;
     left: calc(100% + 12px);
@@ -92,7 +94,7 @@ body {
     text-align: left;
 }
 
-#leaderboardArea h3 { font-size: 0.75rem; margin: 0 0 8px 0; color: #38bdf8; text-transform: uppercase; }
+#leaderboardArea h3 { font-size: 0.75rem; margin: 0 0 8px 0; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; }
 #scoreList { list-style: none; padding: 0; margin: 0; font-family: 'Courier New', monospace; font-size: 0.75rem; color: #38bdf8; line-height: 1.5; }
 
 #gameOverOverlay {
@@ -102,6 +104,29 @@ body {
 }
 .game-over-content { background: #1a3a5a; padding: 30px; border-radius: 20px; border: 3px solid #38bdf8; text-align: center; }
 #playerNameInput { padding: 10px; border-radius: 8px; border: 2px solid #38bdf8; background: #0a2540; color: white; text-align: center; font-weight: bold; width: 150px; margin: 15px 0; outline: none; }
+
+/* MOBILE VERSION: Leaderboard moves to the bottom */
+@media (max-width: 650px) {
+    .main-layout-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    #leaderboardArea {
+        position: relative; /* Detaches it from the right side */
+        left: 0;
+        width: calc(6 * var(--tile-size) + 5 * var(--gap)); /* Matches board width */
+        box-sizing: border-box; /* Keeps padding inside the width limit */
+        margin-top: 20px; /* Space between board and leaderboard */
+        text-align: center; /* Centers the text nicely for mobile */
+    }
+    
+    #scoreList {
+        text-align: left; /* Keeps the actual scores aligned nicely */
+        display: inline-block; 
+    }
+}
     </style>
 </head>
 <body>
