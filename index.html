@@ -6,457 +6,350 @@
     <title>Ocean Match 3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <style>
-        :root {
-            --tile-size: min(60px, 14vw);
-            --gap: 5px;
-            --bg-color: #0a2540;
-        }
+:root {
+    /* Back to stable 60px */
+    --tile-size: min(60px, 14vw); 
+    --gap: 5px;
+    --bg-color: #0a2540;
+}
 
-        body {
-            text-align: center;
-            background: var(--bg-color);
-            color: white;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 10px;
-            overflow: hidden;
-            user-select: none;
-            touch-action: manipulation;
-        }
+body {
+    text-align: center;
+    background: var(--bg-color);
+    color: white;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    -webkit-tap-highlight-color: transparent; 
+}
 
-        h1 {
-            margin: 10px 0;
-            font-size: 1.8rem;
-            color: #38bdf8;
-            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-        }
-#gameOverOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(10, 37, 64, 0.85); /* Dark blue semi-transparent */
-    backdrop-filter: blur(8px); /* Blurs the game board behind */
+.main-layout-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.stats-container {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    align-items: center; width: calc(6 * var(--tile-size) + 5 * var(--gap));
+    margin: 0 auto 15px; font-weight: bold; font-size: 1.1rem; height: 50px;
+}
+
+.icon-content {
+    /* Kept at 0.72 for stable icon-to-tile proportions */
+    font-size: calc(var(--tile-size) * 0.72); 
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100;
-}
-
-.game-over-content {
-    background: #1a3a5a;
-    padding: 40px;
-    border-radius: 20px;
-    border: 3px solid #38bdf8;
-    box-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
-    text-align: center;
-}
-
-.game-over-content h2 {
-    color: #38bdf8;
-    font-size: 2.5rem;
-    margin: 0 0 10px 0;
-}
-
-#finalScoreDisplay {
-    font-size: 1.5rem;
-    margin-bottom: 30px;
-    font-weight: bold;
-}
-
-.game-over-content button {
-    background: #38bdf8;
-    color: #0a2540;
-    border: none;
-    padding: 15px 30px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.game-over-content button:hover {
-    transform: scale(1.1);
-}
-.stats-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    align-items: center;
-    width: calc(6 * var(--tile-size) + 5 * var(--gap));
-    margin: 0 auto 15px;
-    font-weight: bold;
-    font-size: 1.1rem;
-    height: 50px; /* Increased from 40px */
-}
-/* Time stays far left */
-#timerText {
-    text-align: left;
-}
-
-/* Score stays exactly in the middle */
-#scoreText {
-    text-align: center;
-    white-space: nowrap;
-    font-size: 1.6rem; /* Increased size */
-    color: #ffffff;
-    text-shadow: 0 0 10px rgba(56, 189, 248, 0.3); /* Optional: subtle glow to match title */
-}
-
-/* Combo container sits to the right of center */
-#comboContainer {
-    text-align: left;
-    padding-left: 10px;
-    min-height: 1.2em; /* Prevents layout jump when empty */
-}
-
-#comboText {
-    color: #facc15;
-    font-weight: 900;
-}
-        #board {
-            display: grid;
-            grid-template-columns: repeat(6, var(--tile-size));
-            grid-template-rows: repeat(6, var(--tile-size));
-            gap: var(--gap);
-            margin: 0 auto;
-            width: fit-content;
-            background: rgba(255, 255, 255, 0.05);
-            padding: var(--gap);
-            border-radius: 12px;
-            position: relative;
-			overflow: visible;
-        }
-
-        .tile {
-            width: var(--tile-size);
-            height: var(--tile-size);
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            position: relative;
-        }
-
-.icon-content {
-    font-size: calc(var(--tile-size) * 0.65);
-    display: block;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
     z-index: 2;
-    will-change: transform, opacity; /* Add this line */
-}
-        .spark {
-    position: absolute;
-    width: 5px; /* JS will override this size */
-    height: 5px;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 100; /* Ensure sparks are above ghosts */
 }
 
-        #comboText { color: #facc15; min-width: 60px; font-weight: 900; }
+#board {
+    display: grid; grid-template-columns: repeat(6, var(--tile-size));
+    grid-template-rows: repeat(6, var(--tile-size)); gap: var(--gap);
+    background: rgba(255, 255, 255, 0.05);
+    padding: var(--gap); border-radius: 12px; position: relative;
+}
+
+.tile {
+    width: var(--tile-size); 
+    height: var(--tile-size);
+    background: rgba(255, 255, 255, 0.1); 
+    border-radius: 8px;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    position: relative;
+    /* This removes the blue highlight/selection when dragging */
+    outline: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.spark { 
+    position: absolute; 
+    border-radius: 50%; 
+    pointer-events: none; 
+    z-index: 100;
+    /* Slightly stronger glow to match the 50% size increase */
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+}
+
+#leaderboardArea {
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 0;
+    width: 130px; 
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    border: 1px solid #38bdf8;
+    text-align: left;
+}
+
+#leaderboardArea h3 { font-size: 0.75rem; margin: 0 0 8px 0; color: #38bdf8; text-transform: uppercase; }
+#scoreList { list-style: none; padding: 0; margin: 0; font-family: 'Courier New', monospace; font-size: 0.75rem; color: #38bdf8; line-height: 1.5; }
+
+#gameOverOverlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(10, 37, 64, 0.95); display: none;
+    justify-content: center; align-items: center; z-index: 2000;
+}
+.game-over-content { background: #1a3a5a; padding: 30px; border-radius: 20px; border: 3px solid #38bdf8; text-align: center; }
+#playerNameInput { padding: 10px; border-radius: 8px; border: 2px solid #38bdf8; background: #0a2540; color: white; text-align: center; font-weight: bold; width: 150px; margin: 15px 0; outline: none; }
     </style>
 </head>
 <body>
 
-    <h1>Ocean Match 3</h1>
+<h1>Ocean Match 3</h1>
 
-<div class="stats-container">
-    <div id="timerText">Time: 30</div>
-    <div id="scoreText">Score: 0</div>
-    <div id="comboContainer">
-        <span id="comboText"></span>
+    <div class="stats-container">
+        <div id="timerText">Time: 30</div>
+        <div id="scoreText">Score: 0</div>
+        <div id="comboContainer"><span id="comboText"></span></div>
     </div>
-</div>
 
-    <div id="board"></div>
+    <div class="main-layout-wrapper">
+        <div id="board"></div>
 
+        <div id="leaderboardArea">
+            <h3>Top Explorers</h3>
+            <ul id="scoreList"></ul>
+        </div>
+    </div>
+
+    <div id="gameOverOverlay">
+        <div class="game-over-content">
+            <h2 style="color: #38bdf8;">TIME'S UP!</h2>
+            <div id="finalScoreDisplay" style="font-size: 1.5rem;">Score: 0</div>
+            <input type="text" id="playerNameInput" placeholder="YOUR NAME" maxlength="6"><br>
+            <button onclick="saveAndRestart()" style="padding: 12px 25px; cursor: pointer; background: #38bdf8; color: #0a2540; border: none; border-radius: 8px; font-weight: bold;">SAVE & PLAY AGAIN</button>
+        </div>
+    </div>
 <script>
-    // Exact original icons and weights
 const icons = ["🦀", "🐠", "☸️", "⚓", "🐚", "🐬"];
-const weights = [40, 25, 15, 10, 10]; 
+const iconColors = ["#d64545", "#e9c46a", "#9b87af", "#52606d", "#f1dca7", "#64b5f6"];
+const gridWidth = 6;
+let boardData = []; 
+let boardElements = []; 
+let score = 0;
+let timeLeft = 30;
+let isProcessing = true; 
+let selectedIdx = null;
+let timerId = null;
+let startX, startY;
 
-// NEW: Use an array so index 0 (Crab) gets Color 0 (Red)
-const iconColors = [
-    "#d64545", // 0: 🦀 Crab (Muted Crimson)
-    "#e9c46a", // 1: 🐠 Fish (Sandy Yellow)
-    "#9b87af", // 2: ☸️ Wheel (Dusty Purple)
-    "#52606d", // 3: ⚓ Anchor (Slate Grey)
-    "#f1dca7", // 4: 🐚 Shell (Warm Cream)
-    "#64b5f6"  // 5: 🐬 Dolphin (Soft Sky Blue)
-];
+function init() {
+    displayLeaderboard();
+    const boardDiv = document.getElementById("board");
+    boardDiv.innerHTML = "";
     
-    const gridWidth = 6;
-    let boardData = []; 
-    let boardElements = []; 
-    let score = 0;
-    let timeLeft = 30;
-    let isProcessing = true; 
-    let selectedIdx = null;
-    let timerId = null;
-	let startX, startY;
-	let comboTimeout;
-
-    function init() {
-        const boardDiv = document.getElementById("board");
-        boardDiv.innerHTML = "";
+    for (let i = 0; i < 36; i++) {
+        const tileDiv = document.createElement("div");
+        tileDiv.classList.add("tile");
+        const iconSpan = document.createElement("span");
+        iconSpan.classList.add("icon-content");
+        tileDiv.appendChild(iconSpan);
         
-        for (let i = 0; i < gridWidth * gridWidth; i++) {
-            const tileDiv = document.createElement("div");
-            tileDiv.classList.add("tile");
-            tileDiv.dataset.index = i;
-            
-            const iconSpan = document.createElement("span");
-            iconSpan.classList.add("icon-content");
-            tileDiv.appendChild(iconSpan);
-            
-            tileDiv.addEventListener("mousedown", (e) => handleDragStart(e, i));
-tileDiv.addEventListener("touchstart", (e) => handleDragStart(e, i), {passive: false});
-tileDiv.addEventListener("mouseup", (e) => handleDragEnd(e, i));
-tileDiv.addEventListener("touchend", (e) => handleDragEnd(e, i));
-            boardDiv.appendChild(tileDiv);
-            
-            boardElements.push(tileDiv);
-            boardData.push(-1); 
-        }
-
-        fillInitialBoard();
-        startTimer();
-        isProcessing = false;
+        tileDiv.addEventListener("mousedown", (e) => handleStart(e, i));
+        tileDiv.addEventListener("touchstart", (e) => handleStart(e, i), {passive: false});
+        tileDiv.addEventListener("mouseup", (e) => handleEnd(e, i));
+        tileDiv.addEventListener("touchend", (e) => handleEnd(e, i));
+        
+        boardDiv.appendChild(tileDiv);
+        boardElements.push(tileDiv);
+        boardData.push(-1); 
     }
-function handleDragStart(e, idx) {
-    if (isProcessing || timeLeft <= 0) return;
-    // Record starting position (works for both mouse and touch)
-    startX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-    startY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-    selectedIdx = idx;
-    boardElements[idx].style.background = "rgba(255, 255, 255, 0.3)";
+    fillInitial();
+    startTimer();
+    isProcessing = false;
 }
 
-async function handleDragEnd(e, idx) {
-    if (isProcessing || selectedIdx === null) return;
-    
-    const endX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0);
-    const endY = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : 0);
-    
-    const dx = endX - startX;
-    const dy = endY - startY;
-    const threshold = 30; 
+function fillInitial() {
+    for (let i = 0; i < 36; i++) {
+        let val;
+        do { val = Math.floor(Math.random() * 6); } while (isMatch(i, val));
+        boardData[i] = val;
+        render(i);
+    }
+}
 
-    boardElements[selectedIdx].style.background = "";
+function isMatch(idx, val) {
+    const r = Math.floor(idx / 6), c = idx % 6;
+    if (c >= 2 && boardData[idx-1] === val && boardData[idx-2] === val) return true;
+    if (r >= 2 && boardData[idx-6] === val && boardData[idx-12] === val) return true;
+    return false;
+}
+
+function render(i) {
+    const span = boardElements[i].querySelector('.icon-content');
+    if (boardData[i] === -1) {
+        span.style.opacity = "0";
+    } else {
+        span.innerText = icons[boardData[i]];
+        span.style.opacity = "1";
+        span.style.transform = "none"; // Reset any translation, but don't force scale
+        span.style.display = "flex";
+    }
+}
+
+function handleStart(e, i) {
+    if (isProcessing || timeLeft <= 0) return;
+    const t = e.touches ? e.touches[0] : e;
+    startX = t.clientX; startY = t.clientY;
+    selectedIdx = i;
+}
+
+async function handleEnd(e, i) {
+    if (isProcessing || selectedIdx === null) return;
+    const t = e.changedTouches ? e.changedTouches[0] : e;
+    const dx = t.clientX - startX, dy = t.clientY - startY;
+    const threshold = 30;
 
     if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
-        let targetIdx = -1;
-        const r = Math.floor(selectedIdx / gridWidth); // Use selectedIdx (the start)
-        const c = selectedIdx % gridWidth;
-
-        // Logic fix: We calculate direction based on swipe, 
-        // but targetIdx is ALWAYS restricted to +1 or -1 from the start.
+        let target = -1;
+        const r = Math.floor(selectedIdx/6), c = selectedIdx%6;
         if (Math.abs(dx) > Math.abs(dy)) {
-            // Horizontal swipe
-            if (dx > 0 && c < gridWidth - 1) targetIdx = selectedIdx + 1;
-            else if (dx < 0 && c > 0) targetIdx = selectedIdx - 1;
+            if (dx > 0 && c < 5) target = selectedIdx + 1;
+            else if (dx < 0 && c > 0) target = selectedIdx - 1;
         } else {
-            // Vertical swipe
-            if (dy > 0 && r < gridWidth - 1) targetIdx = selectedIdx + gridWidth;
-            else if (dy < 0 && r > 0) targetIdx = selectedIdx - gridWidth;
+            if (dy > 0 && r < 5) target = selectedIdx + 6;
+            else if (dy < 0 && r > 0) target = selectedIdx - 6;
         }
 
-        if (targetIdx !== -1) {
-            const i1 = selectedIdx;
-            selectedIdx = null; 
-            await swap(i1, targetIdx);
+        if (target !== -1) {
+            isProcessing = true;
+            await swap(selectedIdx, target);
+            if (findMatches().length > 0) await resolve();
+            else await swap(selectedIdx, target);
+            isProcessing = false;
         }
     }
-    
     selectedIdx = null;
 }
-    function getWeightedIcon() {
-        let r = Math.floor(Math.random() * 100);
-        // Using indices 0-4 based on the weight table, fallback to 5 (Dolphin) if logic rolls high
-        for (let i = 0; i < weights.length; i++) {
-            if (r < weights[i]) return i;
-            r -= weights[i];
-        }
-        return 5; 
-    }
 
-    function fillInitialBoard() {
-        for (let i = 0; i < boardData.length; i++) {
-            let val;
-            do {
-                val = getWeightedIcon();
-            } while (isCreatingMatch(i, val));
-            boardData[i] = val;
-            renderTile(i);
-        }
-    }
+async function swap(i1, i2) {
+    const s1 = boardElements[i1].querySelector('.icon-content');
+    const s2 = boardElements[i2].querySelector('.icon-content');
+    const r1 = boardElements[i1].getBoundingClientRect();
+    const r2 = boardElements[i2].getBoundingClientRect();
 
-    function isCreatingMatch(idx, val) {
-        const r = Math.floor(idx / gridWidth);
-        const c = idx % gridWidth;
-        if (c >= 2 && boardData[idx - 1] === val && boardData[idx - 2] === val) return true;
-        if (r >= 2 && boardData[idx - gridWidth] === val && boardData[idx - (gridWidth * 2)] === val) return true;
-        return false;
-    }
+    // Swiping animation: Only moves the icons, does not change tile background
+    await Promise.all([
+        anime({ targets: s1, translateX: r2.left - r1.left, translateY: r2.top - r1.top, duration: 250, easing: 'easeOutQuart' }).finished,
+        anime({ targets: s2, translateX: r1.left - r2.left, translateY: r1.top - r2.top, duration: 250, easing: 'easeOutQuart' }).finished
+    ]);
 
-    function renderTile(idx) {
-        const span = boardElements[idx].querySelector('.icon-content');
-        const val = boardData[idx];
-        if (val === -1) {
-            span.style.opacity = "0";
-        } else {
-            span.innerText = icons[val];
-            span.style.opacity = "1";
-            span.style.transform = "scale(1)";
-        }
-    }
+    let temp = boardData[i1]; boardData[i1] = boardData[i2]; boardData[i2] = temp;
+    s1.style.transform = "none"; s2.style.transform = "none";
+    render(i1); render(i2);
+}
 
-    async function handleInteraction(idx) {
-        if (isProcessing || timeLeft <= 0) return;
+// Ensure "end" triggers the overlay name input
+function end() {
+    isProcessing = true;
+    document.getElementById("gameOverOverlay").style.display = "flex";
+    document.getElementById("finalScoreDisplay").innerText = "Final Score: " + score;
+    document.getElementById("playerNameInput").focus();
+}
 
-        if (selectedIdx === null) {
-            selectedIdx = idx;
-            boardElements[idx].style.background = "rgba(255, 255, 255, 0.3)";
-        } else {
-            const i1 = selectedIdx;
-            const i2 = idx;
-            boardElements[i1].style.background = "";
-            selectedIdx = null;
+// Logic for saving from the overlay input
+function saveAndRestart() {
+    const input = document.getElementById("playerNameInput").value.trim();
+    const name = input === "" ? "GUEST" : input.substring(0, 6).toUpperCase();
+    
+    let scores = JSON.parse(localStorage.getItem('oceanScores')) || [];
+    scores.push({ name, score });
+    scores.sort((a, b) => b.score - a.score);
+    localStorage.setItem('oceanScores', JSON.stringify(scores.slice(0, 5)));
+    
+    location.reload();
+}
 
-            if (checkAdjacency(i1, i2)) {
-                await swap(i1, i2);
+function findMatches() {
+    const matches = new Set();
+    for (let r = 0; r < 6; r++) {
+        for (let c = 0; c < 4; c++) {
+            const i = r * 6 + c;
+            if (boardData[i] !== -1 && boardData[i] === boardData[i+1] && boardData[i] === boardData[i+2]) {
+                matches.add(i); matches.add(i+1); matches.add(i+2);
             }
         }
     }
-
-    function checkAdjacency(i1, i2) {
-        const r1 = Math.floor(i1 / gridWidth), c1 = i1 % gridWidth;
-        const r2 = Math.floor(i2 / gridWidth), c2 = i2 % gridWidth;
-        return (Math.abs(r1 - r2) + Math.abs(c1 - c2)) === 1;
-    }
-
-    async function swap(i1, i2, recursiveCheck = true) {
-        isProcessing = true;
-        const span1 = boardElements[i1].querySelector('.icon-content');
-        const span2 = boardElements[i2].querySelector('.icon-content');
-        
-        const rect1 = boardElements[i1].getBoundingClientRect();
-        const rect2 = boardElements[i2].getBoundingClientRect();
-
-        // Anime.js Swap Animation
-        await Promise.all([
-            anime({
-                targets: span1,
-                translateX: rect2.left - rect1.left,
-                translateY: rect2.top - rect1.top,
-                duration: 250,
-                easing: 'easeOutQuart'
-            }).finished,
-            anime({
-                targets: span2,
-                translateX: rect1.left - rect2.left,
-                translateY: rect1.top - rect2.top,
-                duration: 250,
-                easing: 'easeOutQuart'
-            }).finished
-        ]);
-
-        let temp = boardData[i1];
-        boardData[i1] = boardData[i2];
-        boardData[i2] = temp;
-
-        // Reset positions after swap to sync with data
-        span1.style.transform = "none";
-        span2.style.transform = "none";
-        renderTile(i1);
-        renderTile(i2);
-
-        if (recursiveCheck) {
-            const matches = findMatches();
-            if (matches.length > 0) {
-                await resolveMatches();
-            } else {
-                await swap(i1, i2, false); // Swap back if no match
+    for (let c = 0; c < 6; c++) {
+        for (let r = 0; r < 4; r++) {
+            const i = r * 6 + c;
+            if (boardData[i] !== -1 && boardData[i] === boardData[i+6] && boardData[i] === boardData[i+12]) {
+                matches.add(i); matches.add(i+6); matches.add(i+12);
             }
         }
-        isProcessing = false;
     }
+    return Array.from(matches);
+}
 
-async function resolveMatches() {
+async function resolve() {
     let combo = 0;
     while (true) {
         const matches = findMatches();
         if (matches.length === 0) break;
-
         combo++;
         score += matches.length * 10 * combo;
-        timeLeft = Math.min(60, timeLeft + 2);
-        updateStats(combo);
-
+        document.getElementById("scoreText").innerText = "Score: " + score;
+        
         await animateClear(matches);
-
-        // RUN BOTH AT THE SAME TIME
-        // We await the completion of both simultaneously
-        await Promise.all([
-            animateFall(),
-            animateRefill()
-        ]);
+        await animateFlowingDrop();
     }
 }
 
 async function animateClear(matches) {
     const animations = matches.map(idx => {
         const span = boardElements[idx].querySelector('.icon-content');
-        
-        // 1. Get the raw numeric value of the tile (0 through 5)
-        const val = boardData[idx];
-        
-        // 2. Grab the color directly from the array using that number
-        // This completely bypasses any emoji text-matching errors!
-        const matchColor = iconColors[val] || "#ffffff";
-        
-        // 3. Trigger sparks
-        spawnSparks(boardElements[idx], matchColor);
-        
-        // 4. Clear data
+        spawnSparks(boardElements[idx], iconColors[boardData[idx]]);
         boardData[idx] = -1;
-
-        return anime({
-            targets: span,
-            scale: 0,
-            opacity: 0,
-            duration: 400,
-            easing: 'easeInBack'
+        // Only animate opacity to avoid the shrinking "pop" effect
+        return anime({ 
+            targets: span, 
+            opacity: 0, 
+            duration: 400, 
+            easing: 'easeInQuad' 
         }).finished;
     });
-
     await Promise.all(animations);
-    matches.forEach(idx => renderTile(idx));
 }
 
-async function animateFall() {
+async function animateFlowingDrop() {
     const animations = [];
     const gapSize = boardElements[0].offsetWidth + 5;
 
-    for (let col = 0; col < gridWidth; col++) {
-        let emptyCount = 0;
-        for (let row = gridWidth - 1; row >= 0; row--) {
-            const i = row * gridWidth + col;
-            
+    for (let col = 0; col < 6; col++) {
+        let emptySpaces = 0;
+        
+        for (let row = 5; row >= 0; row--) {
+            const i = row * 6 + col;
             if (boardData[i] === -1) {
-                emptyCount++;
-            } else if (emptyCount > 0) {
-                const targetIdx = (row + emptyCount) * gridWidth + col;
+                emptySpaces++;
+            } else if (emptySpaces > 0) {
+                const targetIdx = i + (emptySpaces * 6);
                 const val = boardData[i];
                 const movingSpan = boardElements[i].querySelector('.icon-content');
                 
-                const ghost = document.createElement("span");
-                ghost.innerText = icons[val];
-                ghost.style.cssText = `position: absolute; font-size: calc(var(--tile-size) * 0.65); z-index: 20; pointer-events: none;`;
+// Ensure this multiplier is used for all ghost spans in animateFlowingDrop
+const ghost = document.createElement("span");
+ghost.innerText = icons[val];
+ghost.style.cssText = `
+    position: absolute; 
+    font-size: calc(var(--tile-size) * 0.72); 
+    z-index: 20; 
+    pointer-events: none; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+`;
                 boardElements[i].appendChild(ghost);
 
                 movingSpan.style.opacity = "0";
@@ -465,197 +358,113 @@ async function animateFall() {
 
                 animations.push(anime({
                     targets: ghost,
-                    translateY: emptyCount * gapSize,
-                    duration: 500, // Slightly faster for a snappier feel
-                    easing: 'easeOutElastic(0.5, 1)', // Changed from 0.2 to 0.5 to reduce bounce
+                    translateY: emptySpaces * gapSize,
+                    duration: 600,
+                    easing: 'easeOutElastic(0.6, 1)', 
                     delay: row * 20
                 }).finished.then(() => {
                     ghost.remove();
-                    renderTile(targetIdx);
-                    renderTile(i);
+                    render(targetIdx);
+                    render(i);
                 }));
             }
         }
+
+        for (let row = 0; row < emptySpaces; row++) {
+            const i = row * 6 + col;
+            boardData[i] = Math.floor(Math.random() * 6);
+            const targetSpan = boardElements[i].querySelector('.icon-content');
+            targetSpan.style.opacity = "0"; 
+
+            const ghost = document.createElement("span");
+            ghost.innerText = icons[boardData[i]];
+            // Stable icon size for refilling tiles
+            ghost.style.cssText = `position: absolute; font-size: calc(var(--tile-size) * 0.72); z-index: 15; pointer-events: none; display: flex; justify-content: center; align-items: center;`;
+            boardElements[i].appendChild(ghost);
+
+            const startPos = -(row + emptySpaces + 1) * gapSize;
+
+            animations.push(anime({
+                targets: ghost,
+                translateY: [startPos, 0],
+                opacity: [0, 1],
+                duration: 700,
+                delay: row * 30,
+                easing: 'easeOutElastic(0.6, 1)'
+            }).finished.then(() => {
+                ghost.remove();
+                render(i);
+            }));
+        }
     }
-    await Promise.all(animations);
+    return Promise.all(animations);
 }
-
-async function animateRefill() {
-    const animations = [];
-    const gapSize = boardElements[0].offsetWidth + 5;
-
-    for (let col = 0; col < gridWidth; col++) {
-        let emptyInCol = 0;
-        for (let row = 0; row < gridWidth; row++) {
-            if (boardData[row * gridWidth + col] === -1) emptyInCol++;
-        }
-
-        for (let row = 0; row < gridWidth; row++) {
-            const i = row * gridWidth + col;
-            if (boardData[i] === -1) {
-                const val = getWeightedIcon();
-                boardData[i] = val;
-                
-                const targetSpan = boardElements[i].querySelector('.icon-content');
-                targetSpan.style.opacity = "0"; 
-
-                const ghost = document.createElement("span");
-                ghost.innerText = icons[val];
-                ghost.style.cssText = `position: absolute; font-size: calc(var(--tile-size) * 0.65); z-index: 15; pointer-events: none;`;
-                boardElements[i].appendChild(ghost);
-
-                animations.push(anime({
-                    targets: ghost,
-                    translateY: [-(row + emptyInCol + 2) * gapSize, 0],
-                    opacity: [0, 1],
-                    duration: 500, // Slightly faster
-                    delay: row * 30,
-                    easing: 'easeOutElastic(0.5, 1)' // Changed from 0.2 to 0.5 to reduce bounce
-                }).finished.then(() => {
-                    ghost.remove();
-                    renderTile(i);
-                }));
-            }
-        }
-    }
-    await Promise.all(animations);
-}
-
-    function findMatches() {
-        const matchSet = new Set();
-        for (let r = 0; r < gridWidth; r++) {
-            for (let c = 0; c < gridWidth - 2; c++) {
-                const i = r * gridWidth + c;
-                if (boardData[i] !== -1 && boardData[i] === boardData[i+1] && boardData[i] === boardData[i+2]) {
-                    matchSet.add(i); matchSet.add(i+1); matchSet.add(i+2);
-                }
-            }
-        }
-        for (let c = 0; c < gridWidth; c++) {
-            for (let r = 0; r < gridWidth - 2; r++) {
-                const i = r * gridWidth + c;
-                if (boardData[i] !== -1 && boardData[i] === boardData[i+gridWidth] && boardData[i] === boardData[i+(gridWidth*2)]) {
-                    matchSet.add(i); matchSet.add(i+gridWidth); matchSet.add(i+(gridWidth*2));
-                }
-            }
-        }
-        return Array.from(matchSet);
-    }
-
 function spawnSparks(container, color) {
-    for (let i = 0; i < 12; i++) { 
+    for (let i = 0; i < 15; i++) {
         const s = document.createElement("div");
         s.classList.add("spark");
         
-        // Keeping your original larger size
-        const size = 6 + Math.random() * 6;
-        s.style.width = `${size}px`;
+        // Size increased by 50% (from 4-10px to 6-15px)
+        const size = 6 + Math.random() * 9;
+        s.style.width = `${size}px`; 
         s.style.height = `${size}px`;
-        
-        // Remove the glow (box-shadow) and use a slightly softer opacity
         s.style.backgroundColor = color; 
-        s.style.opacity = "0.8"; 
-        s.style.boxShadow = "none"; // This stops the "too bright" effect
-        
         s.style.left = "50%"; 
         s.style.top = "50%";
         container.appendChild(s);
-        
+
         const angle = Math.random() * Math.PI * 2;
-        const dist = 60 + Math.random() * 60; 
-        
-        anime({
-            targets: s,
-            translateX: Math.cos(angle) * dist,
-            translateY: Math.sin(angle) * dist,
-            opacity: [0.8, 0],
-            scale: [1.5, 0], 
-            duration: 1000,
-            easing: 'easeOutExpo',
-            complete: () => s.remove()
-        });
-    }
-}
+        const dist = 40 + Math.random() * 50;
 
-function updateStats(combo) {
-    document.getElementById("scoreText").innerText = "Score: " + score;
-    document.getElementById("timerText").innerText = "Time: " + Math.ceil(timeLeft);
-    
-    const comboEl = document.getElementById("comboText");
-    
-    if (combo > 1) {
-        // Clear any existing timer so it doesn't disappear too early if you're on a roll
-        clearTimeout(comboTimeout);
-        
-        comboEl.innerText = `x${combo} 🔥`;
-        
-        // Visual pop for the combo
         anime({ 
-            targets: comboEl, 
-            scale: [1.3, 1], 
-            duration: 300,
-            easing: 'easeOutBack'
+            targets: s, 
+            translateX: Math.cos(angle) * dist, 
+            translateY: Math.sin(angle) * dist, 
+            opacity: [1, 0], 
+            // Scale increased by 50% (from 1.2 to 1.8) for a bigger 'pop'
+            scale: [1.8, 0], 
+            duration: 800,
+            easing: 'easeOutExpo', 
+            complete: () => s.remove() 
         });
-
-        // Make it disappear after 1.5 seconds of no matches
-        comboTimeout = setTimeout(() => {
-            anime({
-                targets: comboEl,
-                opacity: 0,
-                duration: 500,
-                complete: () => {
-                    comboEl.innerText = "";
-                    comboEl.style.opacity = 1; // Reset opacity for next time
-                }
-            });
-        }, 1500);
     }
 }
 
 function startTimer() {
-    if (timerId) clearInterval(timerId);
     timerId = setInterval(() => {
         timeLeft--;
         document.getElementById("timerText").innerText = "Time: " + Math.max(0, timeLeft);
-        
-        if (timeLeft <= 0) {
-            clearInterval(timerId);
-            showGameOver();
-        }
+        if (timeLeft <= 0) { clearInterval(timerId); end(); }
     }, 1000);
 }
-function showGameOver() {
-    isProcessing = true; // Stop all interaction
-    const overlay = document.getElementById("gameOverOverlay");
+
+function end() {
+    isProcessing = true;
+    document.getElementById("gameOverOverlay").style.display = "flex";
     document.getElementById("finalScoreDisplay").innerText = "Final Score: " + score;
-    
-    overlay.style.display = "flex";
-    overlay.style.opacity = 0;
-
-    anime({
-        targets: overlay,
-        opacity: 1,
-        duration: 800,
-        easing: 'easeOutQuad'
-    });
-
-    // Optional: Animate the content box popping in
-    anime({
-        targets: '.game-over-content',
-        scale: [0.5, 1],
-        duration: 1000,
-        easing: 'easeOutElastic(1, .8)'
-    });
+    document.getElementById("playerNameInput").focus();
 }
 
-    init();
+function saveAndRestart() {
+    const input = document.getElementById("playerNameInput").value.trim();
+    const name = input === "" ? "GUEST" : input.substring(0, 6).toUpperCase();
+    
+    let scores = JSON.parse(localStorage.getItem('oceanScores')) || [];
+    scores.push({ name, score });
+    scores.sort((a, b) => b.score - a.score);
+    localStorage.setItem('oceanScores', JSON.stringify(scores.slice(0, 5)));
+    
+    location.reload();
+}
+
+function displayLeaderboard() {
+    const s = JSON.parse(localStorage.getItem('oceanScores')) || [];
+    const list = document.getElementById("scoreList");
+    list.innerHTML = s.length === 0 ? "<li>No scores yet!</li>" : 
+        s.map((x, i) => `<li>${i+1}. ${x.name.padEnd(6,'.')} ${x.score}</li>`).join('');
+}
+
+init();
 </script>
-<div id="gameOverOverlay" style="display: none;">
-    <div class="game-over-content">
-        <h2>TIME'S UP!</h2>
-        <div id="finalScoreDisplay">Score: 0</div>
-        <button onclick="location.reload()">PLAY AGAIN</button>
-    </div>
-</div>
 </body>
 </html>
